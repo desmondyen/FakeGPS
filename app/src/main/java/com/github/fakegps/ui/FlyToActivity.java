@@ -40,6 +40,7 @@ public class FlyToActivity extends AppCompatActivity implements View.OnClickList
 
     public static final int DELETE_ID = 1001;
 
+    private EditText mFromLocEditText;
     private EditText mLocEditText;
     private EditText mFlyTimeEditText;
     private ListView mListView;
@@ -52,20 +53,25 @@ public class FlyToActivity extends AppCompatActivity implements View.OnClickList
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fly);
 
-        //location input
-        mLocEditText = (EditText) findViewById(R.id.inputLoc);
+        // From location input
+        mFromLocEditText = (EditText) findViewById(R.id.inputFromLoc);
         LocPoint currentLocPoint = JoyStickManager.get().getCurrentLocPoint();
         if (currentLocPoint != null) {
-            mLocEditText.setText(currentLocPoint.toString());
+            mFromLocEditText.setText(currentLocPoint.toString());
         } else {
             String lastLocPoint = DbUtils.getLastLocPoint(this);
             if (!TextUtils.isEmpty(lastLocPoint)) {
-                mLocEditText.setText(lastLocPoint);
+                mFromLocEditText.setText(lastLocPoint);
             } else {
-                mLocEditText.setText(new LocPoint(LAT_DEFAULT, LON_DEFAULT).toString());
+                mFromLocEditText.setText(new LocPoint(LAT_DEFAULT, LON_DEFAULT).toString());
             }
         }
-        //each move step delta
+
+        // To location input
+        mLocEditText = (EditText) findViewById(R.id.inputLoc);
+        mLocEditText.setHint("Latitude , Longitude");
+
+        // Fly time input
         mFlyTimeEditText = (EditText) findViewById(R.id.inputFlyTime);
         mFlyTimeEditText.setText(String.valueOf(FLY_TIME_DEFAULT));
 
@@ -83,7 +89,8 @@ public class FlyToActivity extends AppCompatActivity implements View.OnClickList
     @Override
     public void onClick(View view) {
         int flyTime = FakeGpsUtils.getIntValueFromInput(this, mFlyTimeEditText);
-        LocPoint point = FakeGpsUtils.getLocPointFromInput(this, mLocEditText);
+        LocPoint fromPoint = FakeGpsUtils.getLocPointFromInput(this, mFromLocEditText);
+        LocPoint toPoint = FakeGpsUtils.getLocPointFromInput(this, mLocEditText);
 
         int id = view.getId();
         if (id == R.id.btn_fly) {
@@ -91,8 +98,10 @@ public class FlyToActivity extends AppCompatActivity implements View.OnClickList
                 if (JoyStickManager.get().isFlyMode()) {
                     JoyStickManager.get().stopFlyMode();
                 } else {
-                    if (point != null && flyTime > 0) {
-                        JoyStickManager.get().flyToLocation(point, flyTime);
+                    if (fromPoint != null && toPoint != null && flyTime > 0) {
+                        // Jump to the "From" location first, then fly to "To"
+                        JoyStickManager.get().jumpToLocation(fromPoint);
+                        JoyStickManager.get().flyToLocation(toPoint, flyTime);
                     } else {
                         Toast.makeText(this, "Input is not valid!", Toast.LENGTH_SHORT).show();
                     }

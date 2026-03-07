@@ -20,9 +20,22 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/location"
+            android:text="From:"
             android:textSize="20sp"/>
 
+        <EditText
+            android:id="@+id/inputFromLoc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/loc_input_hint"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="To:"
+            android:textSize="20sp"/>
 
         <EditText
             android:id="@+id/inputLoc"
@@ -30,7 +43,6 @@
             android:layout_height="wrap_content"
             android:hint="@string/loc_input_hint"
             android:textSize="16sp"/>
-
 
     </LinearLayout>
 
