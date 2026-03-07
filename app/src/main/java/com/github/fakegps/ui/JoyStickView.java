@@ -2,6 +2,7 @@ package com.github.fakegps.ui;
 
 import android.content.Context;
 import android.graphics.PixelFormat;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -48,7 +49,12 @@ public class JoyStickView extends FrameLayout {
         mViewHeight = context.getResources().getDimensionPixelSize(R.dimen.joystick_height);
 
         mWindowLayoutParams = new WindowManager.LayoutParams();
-        mWindowLayoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+        // Use TYPE_APPLICATION_OVERLAY for Android O (26) and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mWindowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            mWindowLayoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+        }
         mWindowLayoutParams.format = PixelFormat.RGBA_8888;
         mWindowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                 | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
@@ -104,35 +110,20 @@ public class JoyStickView extends FrameLayout {
         @Override
         public void onClick(View v) {
             int id = v.getId();
-            switch (id) {
-                case R.id.btn_up:
-                    if (mJoyStickPresenter != null) mJoyStickPresenter.onArrowUpClick();
-                    break;
-                case R.id.btn_down:
-                    if (mJoyStickPresenter != null) mJoyStickPresenter.onArrowDownClick();
-                    break;
-                case R.id.btn_left:
-                    if (mJoyStickPresenter != null) mJoyStickPresenter.onArrowLeftClick();
-                    break;
-                case R.id.btn_right:
-                    if (mJoyStickPresenter != null) mJoyStickPresenter.onArrowRightClick();
-                    break;
-
-                case R.id.btn_set_loc:
-                    if (mJoyStickPresenter != null) mJoyStickPresenter.onSetLocationClick();
-                    break;
-
-                case R.id.btn_fly_to:
-                    if (mJoyStickPresenter != null) mJoyStickPresenter.onFlyClick();
-                    break;
-
-                case R.id.btn_bookmark:
-                    if (mJoyStickPresenter != null) mJoyStickPresenter.onBookmarkLocationClick();
-                    break;
-
-                default:
-                    break;
-
+            if (id == R.id.btn_up) {
+                if (mJoyStickPresenter != null) mJoyStickPresenter.onArrowUpClick();
+            } else if (id == R.id.btn_down) {
+                if (mJoyStickPresenter != null) mJoyStickPresenter.onArrowDownClick();
+            } else if (id == R.id.btn_left) {
+                if (mJoyStickPresenter != null) mJoyStickPresenter.onArrowLeftClick();
+            } else if (id == R.id.btn_right) {
+                if (mJoyStickPresenter != null) mJoyStickPresenter.onArrowRightClick();
+            } else if (id == R.id.btn_set_loc) {
+                if (mJoyStickPresenter != null) mJoyStickPresenter.onSetLocationClick();
+            } else if (id == R.id.btn_fly_to) {
+                if (mJoyStickPresenter != null) mJoyStickPresenter.onFlyClick();
+            } else if (id == R.id.btn_bookmark) {
+                if (mJoyStickPresenter != null) mJoyStickPresenter.onBookmarkLocationClick();
             }
         }
     };

@@ -1,6 +1,7 @@
 package com.github.fakegps;
 
 import android.content.Context;
+import android.util.DisplayMetrics;
 import android.view.WindowManager;
 
 import java.lang.reflect.Field;
@@ -11,7 +12,6 @@ import java.lang.reflect.Field;
 public class ScreenUtils {
 
     public static int getStatusBarHeight(Context context) {
-
         try {
             Class<?> c = Class.forName("com.android.internal.R$dimen");
             Object o = c.newInstance();
@@ -26,18 +26,18 @@ public class ScreenUtils {
     }
 
 
-    @SuppressWarnings("deprecation")
     public static int getScreenWidth(Context context) {
-        return ((WindowManager) context
-                .getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay()
-                .getWidth();
+        DisplayMetrics metrics = new DisplayMetrics();
+        ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
+                .getDefaultDisplay().getMetrics(metrics);
+        return metrics.widthPixels;
     }
 
-    @SuppressWarnings("deprecation")
     public static int getScreenHeight(Context context) {
-        return ((WindowManager) context
-                .getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay()
-                .getHeight();
+        DisplayMetrics metrics = new DisplayMetrics();
+        ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
+                .getDefaultDisplay().getMetrics(metrics);
+        return metrics.heightPixels;
     }
 
     /**

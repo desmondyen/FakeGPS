@@ -6,9 +6,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -19,6 +16,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.github.fakegps.BroadcastEvent;
 import com.github.fakegps.DbUtils;
@@ -32,8 +33,6 @@ import com.tencent.fakegps.R;
 import java.util.ArrayList;
 
 public class FlyToActivity extends AppCompatActivity implements View.OnClickListener {
-    //    private final double LAT_DEFAULT = 37.802406;
-//    private final double LON_DEFAULT = -122.401779;
     private final double LAT_DEFAULT = 23.151637;
     private final double LON_DEFAULT = 113.344721;
 
@@ -86,22 +85,20 @@ public class FlyToActivity extends AppCompatActivity implements View.OnClickList
         int flyTime = FakeGpsUtils.getIntValueFromInput(this, mFlyTimeEditText);
         LocPoint point = FakeGpsUtils.getLocPointFromInput(this, mLocEditText);
 
-        switch (view.getId()) {
-
-            case R.id.btn_fly:
-                if (JoyStickManager.get().isStarted()) {
-                    if (JoyStickManager.get().isFlyMode()) {
-                        JoyStickManager.get().stopFlyMode();
+        int id = view.getId();
+        if (id == R.id.btn_fly) {
+            if (JoyStickManager.get().isStarted()) {
+                if (JoyStickManager.get().isFlyMode()) {
+                    JoyStickManager.get().stopFlyMode();
+                } else {
+                    if (point != null && flyTime > 0) {
+                        JoyStickManager.get().flyToLocation(point, flyTime);
                     } else {
-                        if (point != null && flyTime > 0) {
-                            JoyStickManager.get().flyToLocation(point, flyTime);
-                        } else {
-                            Toast.makeText(this, "Input is not valid!", Toast.LENGTH_SHORT).show();
-                        }
+                        Toast.makeText(this, "Input is not valid!", Toast.LENGTH_SHORT).show();
                     }
                 }
-                updateBtn();
-                break;
+            }
+            updateBtn();
         }
     }
 
@@ -141,13 +138,10 @@ public class FlyToActivity extends AppCompatActivity implements View.OnClickList
     }
 
     public boolean onContextItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case DELETE_ID:
-                AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-                delete(info.position);
-                return true;
-            default:
-                break;
+        if (item.getItemId() == DELETE_ID) {
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+            delete(info.position);
+            return true;
         }
         return super.onContextItemSelected(item);
     }

@@ -3,11 +3,12 @@ package com.github.fakegps.ui;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.fakegps.DbUtils;
 import com.github.fakegps.FakeGpsUtils;
@@ -54,14 +55,12 @@ public class BookmarkActivity extends AppCompatActivity implements View.OnClickL
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.btn_ok:
-                saveBookmark();
-                finish();
-                break;
-            case R.id.btn_cancel:
-                finish();
-                break;
+        int id = view.getId();
+        if (id == R.id.btn_ok) {
+            saveBookmark();
+            finish();
+        } else if (id == R.id.btn_cancel) {
+            finish();
         }
     }
 
@@ -75,8 +74,8 @@ public class BookmarkActivity extends AppCompatActivity implements View.OnClickL
         LocPoint locPointFromInput = FakeGpsUtils.getLocPointFromInput(this, mLocEditText);
         if (locPointFromInput != null) {
             LocBookmark locBookmark = new LocBookmark(name, locPointFromInput);
-            long id = DbUtils.insertBookmark(locBookmark);
-            if (id != -1) {
+            long insertId = DbUtils.insertBookmark(locBookmark);
+            if (insertId != -1) {
                 Toast.makeText(this, "bookmark saved!", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, "bookmark cannot save!", Toast.LENGTH_SHORT).show();

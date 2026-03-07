@@ -1,5 +1,6 @@
 package com.github.fakegps;
 
+import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.widget.EditText;
@@ -19,7 +20,9 @@ public final class FakeGpsUtils {
 
     public static void copyToClipboard(Context context, String content) {
         ClipboardManager cmb = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-        cmb.setText(content.trim());
+        if (cmb != null) {
+            cmb.setPrimaryClip(ClipData.newPlainText("FakeGPS Location", content.trim()));
+        }
     }
 
     public static LocPoint getLocPointFromInput(Context context, EditText editText) {

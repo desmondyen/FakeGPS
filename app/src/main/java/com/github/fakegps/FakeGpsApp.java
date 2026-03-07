@@ -2,7 +2,6 @@ package com.github.fakegps;
 
 import android.app.Application;
 import android.content.Context;
-import android.os.Environment;
 
 import com.litesuits.orm.LiteOrm;
 
@@ -48,15 +47,19 @@ public class FakeGpsApp extends Application {
     }
 
     private void initLogger() {
-        String outputDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/fakegps";
-        File file = new File(outputDir);
-        if (!file.isDirectory()) {
-            file.delete();
+        // Use app-specific external files directory (Scoped Storage compatible)
+        File externalDir = getExternalFilesDir(null);
+        File outputDir;
+        if (externalDir != null) {
+            outputDir = new File(externalDir, "logs");
+        } else {
+            // Fallback to internal storage
+            outputDir = new File(getFilesDir(), "logs");
         }
-        if (!file.exists()) {
-            file.mkdirs();
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
         }
-        Logger.configure(new File(outputDir), "logs");
+        Logger.configure(outputDir, "logs");
     }
 
 }

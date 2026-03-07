@@ -1,14 +1,16 @@
 package com.github.fakegps.ui;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -19,6 +21,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.github.fakegps.BroadcastEvent;
 import com.github.fakegps.DbUtils;
@@ -34,8 +43,10 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private final double LAT_DEFAULT = 37.802406;
     private final double LON_DEFAULT = -122.401779;
-//    private final double LAT_DEFAULT = 23.151637;
-//    private final double LON_DEFAULT = 113.344721;
+
+    private static final int REQUEST_CODE_OVERLAY = 2001;
+    private static final int REQUEST_CODE_LOCATION = 2002;
+    private static final int REQUEST_CODE_NOTIFICATION = 2003;
 
     public static final int DELETE_ID = 1001;
 
@@ -46,6 +57,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mBtnSetNew;
     private BookmarkAdapter mAdapter;
 
+    // Pending start params - saved while requesting permissions
+    private LocPoint mPendingStartPoint;
+    private double mPendingStartStep;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,36 +107,124 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         double step = FakeGpsUtils.getMoveStepFromInput(this, mMoveStepEditText);
         LocPoint point = FakeGpsUtils.getLocPointFromInput(this, mLocEditText);
 
-        switch (view.getId()) {
-            case R.id.btn_start:
-                if (!JoyStickManager.get().isStarted()) {
-                    JoyStickManager.get().setMoveStep(step);
-                    if (point != null) {
-                        JoyStickManager.get().start(point);
-                        finish();
-                    } else {
-                        Toast.makeText(this, "Input is not valid!", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    LocPoint currentLocPoint = JoyStickManager.get().getCurrentLocPoint();
-                    if (currentLocPoint != null) {
-                        DbUtils.saveLastLocPoint(this, currentLocPoint);
-                    }
-                    JoyStickManager.get().stop();
-                    finish();
-                }
-                updateBtnStart();
-                updateBtnSetNew();
-                break;
-
-            case R.id.btn_set_loc:
-                if (step > 0 && point != null) {
-                    JoyStickManager.get().setMoveStep(step);
-                    JoyStickManager.get().jumpToLocation(point);
-                } else {
+        int id = view.getId();
+        if (id == R.id.btn_start) {
+            if (!JoyStickManager.get().isStarted()) {
+                if (point == null) {
                     Toast.makeText(this, "Input is not valid!", Toast.LENGTH_SHORT).show();
+                    return;
                 }
-                break;
+                // Save pending params and start permission check chain
+                mPendingStartPoint = point;
+                mPendingStartStep = step;
+                checkPermissionsAndStart();
+            } else {
+                LocPoint currentLocPoint = JoyStickManager.get().getCurrentLocPoint();
+                if (currentLocPoint != null) {
+                    DbUtils.saveLastLocPoint(this, currentLocPoint);
+                }
+                JoyStickManager.get().stop();
+                finish();
+            }
+            updateBtnStart();
+            updateBtnSetNew();
+        } else if (id == R.id.btn_set_loc) {
+            if (step > 0 && point != null) {
+                JoyStickManager.get().setMoveStep(step);
+                JoyStickManager.get().jumpToLocation(point);
+            } else {
+                Toast.makeText(this, "Input is not valid!", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    /**
+     * Checks all required permissions in order:
+     * 1. Location permission (required for foreground service with location type)
+     * 2. Notification permission (Android 13+)
+     * 3. Overlay permission (for floating joystick)
+     * Then starts the service if all granted.
+     */
+    private void checkPermissionsAndStart() {
+        // Step 1: Check location permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_CODE_LOCATION);
+            return;
+        }
+
+        // Step 2: Check notification permission (Android 13+)
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        REQUEST_CODE_NOTIFICATION);
+                return;
+            }
+        }
+
+        // Step 3: Check overlay permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                new AlertDialog.Builder(this)
+                        .setTitle("需要悬浮窗权限")
+                        .setMessage("FakeGPS 需要悬浮窗权限来显示操控手柄。请在接下来的设置页面中允许此权限。")
+                        .setPositiveButton("去设置", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        Uri.parse("package:" + getPackageName()));
+                                startActivityForResult(intent, REQUEST_CODE_OVERLAY);
+                            }
+                        })
+                        .setNegativeButton("取消", null)
+                        .show();
+                return;
+            }
+        }
+
+        // All permissions granted, start!
+        doStart();
+    }
+
+    private void doStart() {
+        if (mPendingStartPoint != null) {
+            JoyStickManager.get().setMoveStep(mPendingStartStep);
+            JoyStickManager.get().start(mPendingStartPoint);
+            mPendingStartPoint = null;
+            finish();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE_LOCATION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Location granted, continue checking next permission
+                checkPermissionsAndStart();
+            } else {
+                Toast.makeText(this, "需要位置权限才能模拟 GPS", Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == REQUEST_CODE_NOTIFICATION) {
+            // Notification permission is optional, continue regardless
+            checkPermissionsAndStart();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_OVERLAY) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
+                // Overlay granted, continue the chain
+                checkPermissionsAndStart();
+            } else {
+                Toast.makeText(this, "悬浮窗权限未授予", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -170,13 +272,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public boolean onContextItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case DELETE_ID:
-                AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-                delete(info.position);
-                return true;
-            default:
-                break;
+        if (item.getItemId() == DELETE_ID) {
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+            delete(info.position);
+            return true;
         }
         return super.onContextItemSelected(item);
     }

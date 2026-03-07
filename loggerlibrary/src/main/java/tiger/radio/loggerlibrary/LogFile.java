@@ -1,6 +1,6 @@
 package tiger.radio.loggerlibrary;
 
-import android.support.v4.app.FragmentTransaction;
+
 import android.util.Log;
 
 import java.io.File;
@@ -151,7 +151,7 @@ public class LogFile {
         try {
             InputStreamReader reader2 = new FileReader(file);
             try {
-                char[] buf = new char[FragmentTransaction.TRANSIT_EXIT_MASK];
+                char[] buf = new char[8192];
                 while (true) {
                     int ret = reader2.read(buf);
                     if (ret == -1) {

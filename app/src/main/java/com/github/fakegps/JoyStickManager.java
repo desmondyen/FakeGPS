@@ -1,7 +1,12 @@
 package com.github.fakegps;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+import android.content.Intent;
+import android.os.Build;
+
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+
 import android.widget.Toast;
 
 import com.github.fakegps.model.LocPoint;
@@ -55,6 +60,10 @@ public class JoyStickManager implements IJoyStickPresenter {
             mLocationThread = new LocationThread(mContext.getApplicationContext(), this);
             mLocationThread.startThread();
         }
+
+        // Start foreground service for Android 8.0+
+        startForegroundService();
+
         showJoyStick();
         mIsStarted = true;
     }
@@ -65,8 +74,29 @@ public class JoyStickManager implements IJoyStickPresenter {
             mLocationThread = null;
         }
 
+        // Stop foreground service
+        stopForegroundService();
+
         hideJoyStick();
         mIsStarted = false;
+    }
+
+    private void startForegroundService() {
+        try {
+            Intent serviceIntent = new Intent(mContext, FakeLocationService.class);
+            ContextCompat.startForegroundService(mContext, serviceIntent);
+        } catch (Exception e) {
+            Logger.e(TAG, "Failed to start foreground service", e);
+        }
+    }
+
+    private void stopForegroundService() {
+        try {
+            Intent serviceIntent = new Intent(mContext, FakeLocationService.class);
+            mContext.stopService(serviceIntent);
+        } catch (Exception e) {
+            Logger.e(TAG, "Failed to stop foreground service", e);
+        }
     }
 
     public boolean isStarted() {
