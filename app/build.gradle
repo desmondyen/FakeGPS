@@ -1,12 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdk 36 // 👈 升级至 Android 16 编译环境
+    // ❗ 核心修复：显式指定命名空间，解决新版 Gradle 编译报错 ❗
+    namespace "com.github.xiangtailiang.fakegps"
+
+    compileSdk 36 // 升级至 Android 16 编译环境
 
     defaultConfig {
         applicationId "com.github.xiangtailiang.fakegps"
         minSdk 26     // 提升最小支持到 Android 8.0，确保高版本 API 稳定性
-        targetSdk 36  // 👈 核心：将目标安全沙箱升级到 Android 16
+        targetSdk 36  // 将目标安全沙箱升级到 Android 16
 
         versionCode 100
         versionName "1.0.0"
@@ -22,7 +25,7 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_21 // 👈 对齐现代 Java 21 编译链
+        sourceCompatibility JavaVersion.VERSION_21 // 对齐现代 Java 21 编译链
         targetCompatibility JavaVersion.VERSION_21
     }
 }
@@ -32,7 +35,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
     
-    // 引入 2025/2026 现代前台保活组件
+    // 引入现代前台保活组件
     implementation 'androidx.lifecycle:lifecycle-service:2.8.7'
     
     testImplementation 'junit:junit:4.13.2'
