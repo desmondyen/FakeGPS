@@ -1,54 +1,41 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.tencent.fakegps"
-    compileSdk 34
+    compileSdk 36 // 👈 升级至 Android 16 编译环境
 
     defaultConfig {
-        applicationId "com.github.fakegps"
-        minSdk 21
-        targetSdk 34
-        versionCode 2
-        versionName "2.0"
+        applicationId "com.github.xiangtailiang.fakegps"
+        minSdk 26     // 提升最小支持到 Android 8.0，确保高版本 API 稳定性
+        targetSdk 36  // 👈 核心：将目标安全沙箱升级到 Android 16
+
+        versionCode 100
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-
-    signingConfigs {
-        debug {
-            storeFile file('../keystore.debug.jks')
-            storePassword project.hasProperty('STOREPASS') ? STOREPASS : 'apptest'
-            keyAlias project.hasProperty('KEYALIAS') ? KEYALIAS : 'apptest'
-            keyPassword project.hasProperty('KEYPASS') ? KEYPASS : 'apptest'
-        }
-    }
-
-    applicationVariants.configureEach { variant ->
-        variant.outputs.configureEach { output ->
-            outputFileName = "FakeGPS_v${variant.versionName}.apk"
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    lint {
-        abortOnError false
+        sourceCompatibility JavaVersion.VERSION_21 // 👈 对齐现代 Java 21 编译链
+        targetCompatibility JavaVersion.VERSION_21
     }
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
-    testImplementation 'junit:junit:4.13.2'
-    implementation files('libs/lite-orm-1.9.2.jar')
-    implementation project(':loggerlibrary')
     implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'androidx.core:core:1.13.1'
-    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
+    
+    // 引入 2025/2026 现代前台保活组件
+    implementation 'androidx.lifecycle:lifecycle-service:2.8.7'
+    
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }
